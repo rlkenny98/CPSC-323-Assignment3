@@ -1,0 +1,42 @@
+Arithmetic expressions first using these rules: 
+<Expression> -> <Expression> + <Term> | <Expression> - <Term> | <Term> 
+<Term> -> <Term> * <Factor> | <Term> / <Factor> | <Factor> 
+<Factor> -> ( <Expression> ) | <ID> 
+<ID> -> id 
+*the <Num> rule is OPTIONAL 
+
+E -> TE' | T (Left recursion removed)
+E' -> +TE' | -TE' | e
+T  -> FT' | F (Left recursion removed)
+T' -> *FT' | /FT' | e
+F -> (E) | I  
+I -> id 
+
+first(E):  {(,id}
+first(E'): {+,-,e}
+first(T):  {(,id}
+first(T'): {*,\,e}
+first(F):  {(,id}
+first(I):  {id}
+
+follow(E):  {),$}
+follow(E'): {),$}
+follow(T): {
+
+Assignment statement using these rules: 
+<Statement> -> <Assign> 
+<Assign> -> <ID> = <Expression>; 
+*using a semicolon ; at the end of the rule is OPTIONAL
+
+S -> A
+A -> I = E
+
+Declarative statement using these rules: 
+<Statement> -> <Declarative> 
+<Declarative> -> <Type> <ID> 
+<Type> -> bool | float | int 
+*using a semicolon ; at the end of the rule is OPTIONAL 
+
+S -> D
+D -> YI 
+Y -> bool | float | int
