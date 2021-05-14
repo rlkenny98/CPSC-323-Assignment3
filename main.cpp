@@ -32,13 +32,13 @@ int main(int argc, char *argv[])
 	generator.setIfile(input);
 	generator.getInputCode();
 	generator.closeIfile();
+	// Prepare output 
+	generator.setOfile();
 
 	// Lexer is in assignment3.h
-	// Prepare output 
-	generator.setOfile("output.txt");
 	// Start procedure
 	generator.procStart(input);
-
+	// Some error is happening with the procedures 
 	generator.instPrint();
 	generator.closeOfile();
 

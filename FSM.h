@@ -98,7 +98,7 @@ public:
 				return "SEPARATOR";
 			}
 			else
-				return "other";
+				return "OTHER";
 		}
 		else
 			return "ERROR";

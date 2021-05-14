@@ -59,8 +59,10 @@ int mem_addrs = 5000;
 // Global variable for the instruction address/ index 
 int instr_addrs = 1;
 
+/*
 // Global variable for accessing vector 
 unsigned vectorPos = 0;
+*/
 
 char operators[] = "*+-=/><%";
 
@@ -70,22 +72,23 @@ struct tableObject{
     int memAddress; 
 };
 
-string get_address(string tok){
+struct tokenObject{
+    string tokenName, tokenType;
+};
 
-    string add = to_string(mem_addrs);
-    mem_addrs++;
-    return add;
-
-}
-
+// Class that contains attributes and functions used in this assignment 
 class codeGen{
     private:
+
+        // Tracks the current vector position whenever callLexer() is invoked 
+        int vectorPos = 0;
+
          // Input file 
         ifstream input;
         // Output file 
         ofstream output; 
         // Token value 
-        string token = ""; 
+        tokenObject token;
 
         // Vector that contains the code from input 
         vector<string> codeVector; 
@@ -93,11 +96,10 @@ class codeGen{
 	    vector<tokens> lexerStorage;
           
         // Instruction Table
-        vector<tableObject> instrTable; 
+        tableObject instrTable[1000];
         // Symbol Table 
         vector<tableObject> symbolTable;
 
-	     
     public: 
         // Put input into vector 
         void getInputCode(){
@@ -108,25 +110,49 @@ class codeGen{
         // Access lexer storage and store element in token
         void callLexer(){
             // Obtain new value for our token 
-            cout << lexerStorage[vectorPos].token << endl;
-
-            if(lexerStorage[vectorPos].token == "IDENTIFIER")
-              token = "id";
-            
-            if(lexerStorage[vectorPos].lexeme == "=")
-              token = "=";
-            
-            if(lexerStorage[vectorPos].lexeme == "+")
-              token = "+";
-            
-            if(lexerStorage[vectorPos].lexeme == "*")
-              token = "*";
-
-            //if ((vectorPos + 1) < lexerStorage.size())
+            // If the current value is a keyword, move forward
+            if(lexerStorage[vectorPos].token == "KEYWORD"){
                 vectorPos++;
+                if(lexerStorage[vectorPos].token == "IDENTIFIER"){
+                    token.tokenName = lexerStorage[vectorPos].lexeme;
+                    token.tokenType = "id";
+                    }
+            }
 
-            cout << token << endl;
+            if(lexerStorage[vectorPos].token == "IDENTIFIER"){
+                    token.tokenName = lexerStorage[vectorPos].lexeme;
+                    token.tokenType = "id";
+                    }
 
+            if(lexerStorage[vectorPos].lexeme == "="){
+               token.tokenName = "=";
+               token.tokenType = "Operator";
+            }
+            
+            if(lexerStorage[vectorPos].lexeme == "+"){
+               token.tokenName = "+";
+               token.tokenType = "Operator";
+            }
+            
+            if(lexerStorage[vectorPos].lexeme == "*"){
+               token.tokenName = "*";
+               token.tokenType = "Operator";
+            }
+
+            vectorPos++;
+
+            cout << "Token value: " << token.tokenName <<  " Token type: " << token.tokenType << endl;
+
+        }
+        
+        // Print the lexer storage vector
+        // This function can be modified for testing purposes 
+        void testVector(){
+            cout << "Testing vector" << endl; 
+            /*for (auto it : lexerStorage){
+                cout << it.token << ": " << it.lexeme <<  endl;
+            }*/
+            cout << "Vector Size: " << lexerStorage.size() << endl;
         }
 
         // Set input 
@@ -141,7 +167,7 @@ class codeGen{
         }
 
         // Set output 
-        void setOfile(string name){
+        void setOfile(string name = "output.txt"){
 
             output.open(name); 
             if(!output.is_open()){ std::cout << "Output File Error\n"; exit(1);}
@@ -153,8 +179,22 @@ class codeGen{
             output.close();
         }
 
+        // Get address based off of the token?
+        // Maybe check symbol table 
+        string get_address(tokenObject tok){
+
+            // Check symbol table given the token
+
+            for (auto item : symbolTable)
+            {
+                if (tok.tokenName == item.identifier){
+                    return to_string(item.memAddress);
+                }
+            } 
+            return "nil"; 
+        }
         // Add an identifier to the symbol table 
-       string addID(string id, int mem, string type){
+        string addID(string id, int mem, string type){
         
             tableObject elem; 
 
@@ -163,9 +203,10 @@ class codeGen{
             elem.memAddress = mem;
 
             // Iterate through the vector and check if Identifier exists
-            for (const auto &item : symbolTable)
+            for (auto item : symbolTable){
                 if (item.identifier == id)
                 {return "Element already exists in the table!";}
+            }
           
             //if it doesnt exist, push to the vector 
             symbolTable.push_back(elem);
@@ -175,13 +216,16 @@ class codeGen{
 
         // Function that generates an instruction within the instruction table  
         void gen_instr(string op, string oprnd){
+                //cout << "Generating instruction: " << op << " " << oprnd << endl;
                 instrTable[instr_addrs].memAddress = instr_addrs;
+                //cout << "Instruction Address " << instr_addrs << " saved\n";
                 instrTable[instr_addrs].identifier = op;
+                //cout << "Instruction Operator " << op << " saved\n";
                 instrTable[instr_addrs].idType = oprnd;
-
+                //cout << "Instruction Operand: " << oprnd << " saved\n";
                 instr_addrs++;
-
             }
+
         // Found under the While Statement Pseudocode 
         void back_patch(int jump_add){
             /* TO-DO 
@@ -206,15 +250,17 @@ class codeGen{
 
         // Print the instruction table while igoring 'nil'
         void instPrint(){
-	            for (auto inst : instrTable)
+                output << "Instruction Table: " << endl;
+                output << setw(10) << left <<"Address"<< setw(15) << "Op" <<setw(15)<< "Oprnd" <<endl;
+	            for (int i = 1; i < instr_addrs; i++)
 	            {
-		            if (inst.idType == "nil") {output << setw(10) << left << inst.memAddress << setw(15) << inst.identifier<< endl;}
+		            if (instrTable[i].idType == "nil") {output << setw(10) << left << instrTable[i].memAddress << setw(15) << instrTable[i].identifier<< endl;}
 
 		            else 
-			            output << setw(10) << left << inst.memAddress<< setw(15) << inst.identifier <<setw(15)<< inst.idType <<endl;
+			            output << setw(10) << left << instrTable[i].memAddress<< setw(15) << instrTable[i].identifier <<setw(15)<< instrTable[i].idType <<endl;
 	            }
+                output << "\n===================================================";
 	            printSymbol();
-
             }
       
         // Print an error message lol 
@@ -225,19 +271,14 @@ class codeGen{
         // Moved lexer from main
         void lexer()
         {   
-            cout << "Time for lexer to do its thing...." << endl;
-
             FSM machine;
             int state = 0;
             int lexStart = 0;
-
-            // These for loops need the integer type because of the return type of .size() and .length()
             for (long long unsigned int vecString = 0; vecString < codeVector.size(); vecString++) {
                 for (long long unsigned int vecChar = 0; vecChar <= codeVector[vecString].length(); vecChar++) {
                     if (state == 0) {
                         lexStart = vecChar;
                     }
-
                     state = machine.check_input(state, machine.char_to_input(codeVector[vecString][vecChar]));
                     if (machine.is_final_state(state)) {
                         if (machine.should_back_up(state)) {
@@ -251,6 +292,11 @@ class codeGen{
                             
                             if (machine.getTokenName(state, lex) != "OTHER") {
                                 lexerStorage.push_back(tokens(machine.getTokenName(state, lex), lex));
+                                if(machine.getTokenName(state, lex) == "IDENTIFIER"){
+                                    // Add to the symbol table 
+                                    addID(lex, mem_addrs, "null");
+                                    mem_addrs++;
+                                }
                                 
                             }
                         }
@@ -260,20 +306,17 @@ class codeGen{
             }
         }
 
-// ####################################################################################################################################
-// ##################################### Intermediate code generation below ###########################################################
-// ####################################################################################################################################
+//#####################################################################################################################################
+//###################################### Intermediate code generation below ###########################################################
+//#####################################################################################################################################
         
         // For testing purposes 
         void procStart(string type){
-
+            cout << "Starting the procedure " << endl;
             // Get token from lexer 
             lexer();
-            callLexer();
+            //testVector();
             if (type == "assignment.txt"){
-            // Reinitialize vector position
-                output << "Assignment Statement" << endl;
-                //vectorPos = 0;
                 proc_A();
             }
             // Incomplete procedures below 
@@ -282,6 +325,13 @@ class codeGen{
             if (type == "if")
                 procI();
         } 
+
+
+        // Declarative Statement!
+        /*
+            D1) D -> Y id
+            D2) Y -> bool | float | int
+        */
        
         // 1. ASSIGNMENT STATEMENT
         /*
@@ -296,16 +346,17 @@ class codeGen{
         */ 
 
         void proc_A(){
-            /* TO-DO */
-            if(token == "id")
+            cout << "Procedure A" << endl;
+            callLexer();
+            if(token.tokenType == "id")
                 {
-                string save = token;
+                tokenObject save = token;
                 callLexer();
-                if(token == "=")
+                if(token.tokenName == "=")
                     {
                     callLexer();
                     proc_E();
-                    gen_instr ("POPM",get_address(save));
+                    gen_instr("POPM",get_address(save));
                     }
                 else error_message("= expected");
                 }
@@ -313,13 +364,16 @@ class codeGen{
         }
 
         void proc_E(){
+            cout << "Procedure E" << endl;
             proc_T();
             proc_Eprime();
         }
 
         void proc_Eprime(){
-            if (token == "+")
-            {
+            cout << "Procedure E Prime" << endl;
+            if (token.tokenName == "+")
+            {   
+                cout << " '+' detected\n";
                 callLexer(); 
                 proc_T();
                 gen_instr("ADD", "nil");
@@ -328,13 +382,14 @@ class codeGen{
         }
 
         void proc_T(){
+            cout << "Procedure T" << endl;
             proc_F();
             proc_Tprime();
         }
 
         void proc_Tprime(){
-            /* TO-DO */
-            if (token == "*")
+            cout << "Procedure T Prime" << endl;
+            if (token.tokenName == "*")
             {
                 callLexer();
                 proc_F();
@@ -344,14 +399,14 @@ class codeGen{
         }
 
         void proc_F(){
-            /* TO-DO */
-            if(token == "id"){
+            cout << "Procedure F" << endl;
+            if(token.tokenType == "id"){
                 gen_instr("PUSHM", get_address(token));
                 callLexer();
             }
             else error_message("id expected");
         }
-    // ##############################################################################################
+    //###############################################################################################
 
         // 2. WHILE STATEMENT 
         /*
@@ -361,11 +416,52 @@ class codeGen{
         */
         
         void procWhile(){
-            /* TO-DO */
+            // messy af 
+            if (token.tokenName == "while"){
+                int addr = instr_addrs;
+                gen_instr("LABEL", "nil");
+                callLexer();
+                if (token.tokenName == "("){
+                    callLexer();
+                    procC();
+                    if (token.tokenName == ")"){
+                        callLexer();
+                        // Procedure for separator??
+                        gen_instr("JUMP", to_string(addr));
+                        back_patch(instr_addrs);
+                        if (token.tokenName == "whileend")
+                        {
+                            callLexer();
+                        }
+                        else error_message("whileend expected");
+                    }
+                   else error_message(") expected"); 
+                }
+                else error_message("( expected");
+            }
+            else error_message("while expected");
         }
 
         void procC(){
-            /* TO-DO */
+            proc_E();
+            
+            /* 
+            if token in R then
+                {
+                    op = token;
+                    lexer();
+                    E();
+                    case op of
+                        < : gen instr(LES,nil);
+                            push_jumpstack(instr_address);
+                            gen_instr(JUMPZ, nil);
+                        >:
+                        ==:
+                        ^=:
+                    case
+                }
+                else error_message("R token expected");
+             */
         }
 
         // 3. IF STATEMENT

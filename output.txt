@@ -1,1 +1,16 @@
-Assignment Statement
+Instruction Table: 
+Address   Op             Oprnd          
+1         PUSHM          5001           
+2         PUSHM          5002           
+3         PUSHM          5003           
+4         MUL            
+5         ADD            
+6         POPM           5000           
+
+===================================================
+Symbol Table:
+Identifier         MemoryLocation           Type
+x                   5000                     null                              
+a                   5001                     null                              
+b                   5002                     null                              
+c                   5003                     null                              
