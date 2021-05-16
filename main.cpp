@@ -11,11 +11,9 @@
 #include <ostream>
 #include <fstream>
 #include <string>
-#include "syntax.h" 
 #include "assignment3.h"
 #include "FSM.h"
 using namespace std; 
-
 
 int main(int argc, char *argv[])
 {

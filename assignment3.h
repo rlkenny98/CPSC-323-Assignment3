@@ -59,12 +59,10 @@ int mem_addrs = 5000;
 // Global variable for the instruction address/ index 
 int instr_addrs = 1;
 
-/*
-// Global variable for accessing vector 
-unsigned vectorPos = 0;
-*/
-
-char operators[] = "*+-=/><%";
+// Data structure for generating instructions
+struct tokenObject{
+    string tokenName, tokenType;
+};
 
 // Data structure for tables 
 struct tableObject{
@@ -72,8 +70,13 @@ struct tableObject{
     int memAddress; 
 };
 
-struct tokenObject{
-    string tokenName, tokenType;
+// Data structure used in the lexer 
+struct tokens {
+	string token;
+	string lexeme;
+	tokens(string tok, string lex) {
+		token = tok, lexeme = lex;
+	}
 };
 
 // Class that contains attributes and functions used in this assignment 
@@ -101,13 +104,133 @@ class codeGen{
         vector<tableObject> symbolTable;
 
     public: 
+         // Print an error message lol 
+        void error_message(string msg){
+            output << msg << endl;
+        }
+
+        // Set input 
+        void setIfile(string in){
+            input.open(in);
+	        if (!input.is_open()){cerr << "File Opening Error\n"; exit(-1);}
+        }
+        
+        // Close output
+        void closeIfile(){
+            input.close();
+        }
+
+        // Set output 
+        void setOfile(string name = "output.txt"){
+
+            output.open(name); 
+            if(!output.is_open()){ std::cout << "Output File Error\n"; exit(1);}
+        }
+
+        // Close output 
+        void closeOfile(){
+
+            output.close();
+        }
+
         // Put input into vector 
         void getInputCode(){
             string line;
             while (getline(input, line)) {codeVector.push_back(line);}
         }
 
-        // Access lexer storage and store element in token
+        // This function can be modified for testing purposes 
+        void testVector(){
+            cout << "Testing vector" << endl; 
+            /*for (auto it : lexerStorage){
+                cout << it.token << ": " << it.lexeme <<  endl;
+            }*/
+            cout << "Vector Size: " << lexerStorage.size() << endl;
+        }
+
+        // Get address based off of the token?
+        // Maybe check symbol table 
+        string get_address(tokenObject tok){
+
+            // Check symbol table given the token
+
+            for (auto item : symbolTable)
+            {
+                if (tok.tokenName == item.identifier){
+                    return to_string(item.memAddress);
+                }
+            } 
+            return "nil"; 
+        }
+
+        // Found under the While Statement Pseudocode 
+        void back_patch(int jump_add){
+            /* TO-DO 
+            Procedure back_patch (jump_addr)
+            {
+                addr = pop_jumpstack();
+                Instr_table[addr].oprn = jump_addr;
+                }
+            */
+        }
+
+        // Print the symbol table 
+        void printSymbol(){
+             output << "\nSymbol Table:\n"
+                    << "Identifier         MemoryLocation           Type" << endl; 
+             for (auto it : symbolTable) {
+                 output << setw(20) << left << it.identifier << setw(25) << it.memAddress 
+                           << setw(34) << it.idType << endl;
+                } 
+
+        }
+         // Function that generates an instruction within the instruction table  
+        void gen_instr(string op, string oprnd){
+                instrTable[instr_addrs].memAddress = instr_addrs;
+                instrTable[instr_addrs].identifier = op;       
+                instrTable[instr_addrs].idType = oprnd;              
+                instr_addrs++;
+            }
+
+        // Print the instruction table while igoring 'nil'
+        void instPrint(){
+                output << "Instruction Table: " << endl;
+                output << setw(10) << left <<"Address"<< setw(15) << "Op" <<setw(15)<< "Oprnd" <<endl;
+	            for (int i = 1; i < instr_addrs; i++)
+	            {
+		            if (instrTable[i].idType == "nil") {output << setw(10) << left << instrTable[i].memAddress 
+                        << setw(15) << instrTable[i].identifier<< endl;}
+
+		            else 
+			            output << setw(10) << left << instrTable[i].memAddress<< setw(15) << instrTable[i].identifier 
+                        << setw(15)<< instrTable[i].idType <<endl;
+	            }
+                output << "\n===================================================";
+	            printSymbol();
+            }
+
+         // Add an identifier to the symbol table 
+        string addID(string id, int mem, string type){
+        
+            tableObject elem; 
+
+            elem.identifier = id;
+            elem.idType = type;
+            elem.memAddress = mem;
+
+            // Iterate through the vector and check if Identifier exists
+            for (auto item : symbolTable){
+                if (item.identifier == id)
+                {return "Element already exists in the table!";}
+            }
+          
+            //if it doesnt exist, push to the vector 
+            symbolTable.push_back(elem);
+
+            return "Success";
+        }
+
+          // Access lexer storage and store element in token
         void callLexer(){
             // Obtain new value for our token 
             // If the current value is a keyword, move forward
@@ -143,129 +266,6 @@ class codeGen{
 
             cout << "Token value: " << token.tokenName <<  " Token type: " << token.tokenType << endl;
 
-        }
-        
-        // Print the lexer storage vector
-        // This function can be modified for testing purposes 
-        void testVector(){
-            cout << "Testing vector" << endl; 
-            /*for (auto it : lexerStorage){
-                cout << it.token << ": " << it.lexeme <<  endl;
-            }*/
-            cout << "Vector Size: " << lexerStorage.size() << endl;
-        }
-
-        // Set input 
-        void setIfile(string in){
-            input.open(in);
-	        if (!input.is_open()){cerr << "File Opening Error\n"; exit(-1);}
-        }
-        
-        // Close output
-        void closeIfile(){
-            input.close();
-        }
-
-        // Set output 
-        void setOfile(string name = "output.txt"){
-
-            output.open(name); 
-            if(!output.is_open()){ std::cout << "Output File Error\n"; exit(1);}
-        }
-
-        // Close output 
-        void closeOfile(){
-
-            output.close();
-        }
-
-        // Get address based off of the token?
-        // Maybe check symbol table 
-        string get_address(tokenObject tok){
-
-            // Check symbol table given the token
-
-            for (auto item : symbolTable)
-            {
-                if (tok.tokenName == item.identifier){
-                    return to_string(item.memAddress);
-                }
-            } 
-            return "nil"; 
-        }
-        // Add an identifier to the symbol table 
-        string addID(string id, int mem, string type){
-        
-            tableObject elem; 
-
-            elem.identifier = id;
-            elem.idType = type;
-            elem.memAddress = mem;
-
-            // Iterate through the vector and check if Identifier exists
-            for (auto item : symbolTable){
-                if (item.identifier == id)
-                {return "Element already exists in the table!";}
-            }
-          
-            //if it doesnt exist, push to the vector 
-            symbolTable.push_back(elem);
-
-            return "Success";
-        }
-
-        // Function that generates an instruction within the instruction table  
-        void gen_instr(string op, string oprnd){
-                //cout << "Generating instruction: " << op << " " << oprnd << endl;
-                instrTable[instr_addrs].memAddress = instr_addrs;
-                //cout << "Instruction Address " << instr_addrs << " saved\n";
-                instrTable[instr_addrs].identifier = op;
-                //cout << "Instruction Operator " << op << " saved\n";
-                instrTable[instr_addrs].idType = oprnd;
-                //cout << "Instruction Operand: " << oprnd << " saved\n";
-                instr_addrs++;
-            }
-
-        // Found under the While Statement Pseudocode 
-        void back_patch(int jump_add){
-            /* TO-DO 
-            Procedure back_patch (jump_addr)
-            {
-                addr = pop_jumpstack();
-                Instr_table[addr].oprn = jump_addr;
-                }
-            */
-        }
-
-        // Print the symbol table 
-        void printSymbol(){
-             output << "\nSymbol Table:\n"
-                    << "Identifier         MemoryLocation           Type" << endl; 
-             for (auto it : symbolTable) {
-                 output << setw(20) << left << it.identifier << setw(25) << it.memAddress 
-                           << setw(34) << it.idType << endl;
-                } 
-
-        }
-
-        // Print the instruction table while igoring 'nil'
-        void instPrint(){
-                output << "Instruction Table: " << endl;
-                output << setw(10) << left <<"Address"<< setw(15) << "Op" <<setw(15)<< "Oprnd" <<endl;
-	            for (int i = 1; i < instr_addrs; i++)
-	            {
-		            if (instrTable[i].idType == "nil") {output << setw(10) << left << instrTable[i].memAddress << setw(15) << instrTable[i].identifier<< endl;}
-
-		            else 
-			            output << setw(10) << left << instrTable[i].memAddress<< setw(15) << instrTable[i].identifier <<setw(15)<< instrTable[i].idType <<endl;
-	            }
-                output << "\n===================================================";
-	            printSymbol();
-            }
-      
-        // Print an error message lol 
-        void error_message(string msg){
-            output << msg << endl;
         }
 
         // Moved lexer from main
@@ -306,9 +306,9 @@ class codeGen{
             }
         }
 
-//#####################################################################################################################################
-//###################################### Intermediate code generation below ###########################################################
-//#####################################################################################################################################
+//##########################################################################################################################
+//###################################### Intermediate code generation below ################################################
+//##########################################################################################################################
         
         // For testing purposes 
         void procStart(string type){
@@ -325,7 +325,6 @@ class codeGen{
             if (type == "if")
                 procI();
         } 
-
 
         // Declarative Statement!
         /*
@@ -473,5 +472,4 @@ class codeGen{
         // 5. Scan statement?
         // 6. Print statement?
 };
-
 #endif

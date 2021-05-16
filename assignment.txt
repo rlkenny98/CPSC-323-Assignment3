@@ -1,4 +1,5 @@
-x = a + b*c 
+x = a + b*c;
+
 
 ! Find the sum between two numbers!
 ! int num, nu2m, sum; ! 
